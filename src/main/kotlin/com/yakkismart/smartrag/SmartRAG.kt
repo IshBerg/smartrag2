@@ -9,6 +9,8 @@ package com.yakkismart.smartrag
 import android.content.Context
 import com.yakkismart.smartrag.api.SearchParams
 import com.yakkismart.smartrag.api.SearchResult
+import com.yakkismart.smartrag.embedding.OnnxEmbeddingEngine
+import com.yakkismart.smartrag.embedding.CacheStats
 import com.yakkismart.smartrag.import.DocumentImporter
 import com.yakkismart.smartrag.import.ImportDocument
 import com.yakkismart.smartrag.import.ImportJob
@@ -27,6 +29,12 @@ class SmartRAG private constructor(
 
     private val sqliteManager: SQLiteManager = SQLiteManager(context, config.dbName)
     private val vectorEngine: VectorEngine
+
+    // ONNX Embedding Engine (Фаза 6)
+    private val onnxEngine: OnnxEmbeddingEngine = OnnxEmbeddingEngine(
+        context = context,
+        dimensions = config.embeddingDimensions
+    )
 
     // Поисковые стратегии
     private val textSearch: TextSearch
@@ -57,15 +65,19 @@ class SmartRAG private constructor(
             }
         }
 
+        // Embedding функция с ONNX
+        val embeddingFunction: suspend (String) -> FloatArray = { text ->
+            onnxEngine.encode(text).getOrElse {
+                FloatArray(config.embeddingDimensions) { 0f }
+            }
+        }
+
         // Инициализация поисковых стратегий
         textSearch = TextSearch(sqliteManager)
         vectorSearch = VectorSearch(
             vectorEngine,
             sqliteManager,
-            embeddingFunction = { text ->
-                // TODO: Реализуем в Фазе 6 (ONNX Embeddings)
-                FloatArray(config.embeddingDimensions) { 0f }
-            }
+            embeddingFunction = embeddingFunction
         )
         graphSearch = GraphSearch(sqliteManager)
 
@@ -88,10 +100,7 @@ class SmartRAG private constructor(
         documentImporter = DocumentImporter(
             sqliteManager,
             vectorEngine,
-            embeddingFunction = { text ->
-                // TODO: Implement ONNX embeddings in Phase 6
-                FloatArray(config.embeddingDimensions) { 0f }
-            }
+            embeddingFunction = embeddingFunction
         )
     }
 
@@ -148,9 +157,45 @@ class SmartRAG private constructor(
     }
 
     /**
+     * Инициализация ONNX движка (вызвать перед использованием).
+     */
+    suspend fun initializeEmbeddings(): Result<Unit> {
+        return onnxEngine.initialize()
+    }
+
+    /**
+     * Генерирует embedding для текста.
+     */
+    suspend fun generateEmbedding(text: String): Result<FloatArray> {
+        return onnxEngine.encode(text)
+    }
+
+    /**
+     * Генерирует embeddings для нескольких текстов.
+     */
+    suspend fun generateEmbeddings(texts: List<String>): Result<List<FloatArray>> {
+        return onnxEngine.encodeBatch(texts)
+    }
+
+    /**
+     * Получает статистику кэша embeddings.
+     */
+    fun getEmbeddingCacheStats(): CacheStats {
+        return onnxEngine.getCacheStats()
+    }
+
+    /**
+     * Очищает кэш embeddings.
+     */
+    fun clearEmbeddingCache() {
+        onnxEngine.clearCache()
+    }
+
+    /**
      * Закрыть все ресурсы SmartRAG.
      */
     fun close() {
+        onnxEngine.close()
         vectorEngine.close()
         sqliteManager.close()
     }
@@ -164,6 +209,10 @@ class SmartRAG private constructor(
 
         fun setVectorBackend(backend: VectorBackend) = apply {
             config = config.copy(vectorBackend = backend)
+        }
+
+        fun setEmbeddingDimensions(dimensions: Int) = apply {
+            config = config.copy(embeddingDimensions = dimensions)
         }
 
         fun build(): SmartRAG = SmartRAG(context, config)
