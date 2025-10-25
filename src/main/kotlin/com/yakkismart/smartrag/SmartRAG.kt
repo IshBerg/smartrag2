@@ -9,8 +9,13 @@ package com.yakkismart.smartrag
 import android.content.Context
 import com.yakkismart.smartrag.api.SearchParams
 import com.yakkismart.smartrag.api.SearchResult
+import com.yakkismart.smartrag.import.DocumentImporter
+import com.yakkismart.smartrag.import.ImportDocument
+import com.yakkismart.smartrag.import.ImportJob
+import com.yakkismart.smartrag.import.ImportResult
 import com.yakkismart.smartrag.search.*
 import com.yakkismart.smartrag.storage.SQLiteManager
+import com.yakkismart.smartrag.storage.DatabaseStats
 import com.yakkismart.smartrag.vector.VectorEngine
 import com.yakkismart.smartrag.vector.SQLiteVectorEngine
 import com.yakkismart.smartrag.vector.RustVectorEngine
@@ -29,6 +34,9 @@ class SmartRAG private constructor(
     private val graphSearch: GraphSearch
     private val hybridSearch: HybridSearchEngine
     private val adaptiveRouter: AdaptiveRouter
+
+    // Import pipeline
+    private val documentImporter: DocumentImporter
 
     init {
         // Инициализация базы данных
@@ -75,6 +83,16 @@ class SmartRAG private constructor(
             graphSearch,
             hybridSearch
         )
+
+        // Инициализация документного импортера
+        documentImporter = DocumentImporter(
+            sqliteManager,
+            vectorEngine,
+            embeddingFunction = { text ->
+                // TODO: Implement ONNX embeddings in Phase 6
+                FloatArray(config.embeddingDimensions) { 0f }
+            }
+        )
     }
 
     /**
@@ -103,6 +121,30 @@ class SmartRAG private constructor(
      */
     suspend fun search(query: String, params: SearchParams = SearchParams.default()): Result<SearchResult> {
         return adaptiveRouter.searchAuto(query, params)
+    }
+
+    /**
+     * Импорт одного документа.
+     */
+    suspend fun importDocument(document: ImportDocument): Result<ImportResult> {
+        return documentImporter.importDocument(document)
+    }
+
+    /**
+     * Импорт нескольких документов с progress tracking.
+     */
+    suspend fun importDocuments(
+        documents: List<ImportDocument>,
+        onProgress: ((ImportJob) -> Unit)? = null
+    ): Result<ImportJob> {
+        return documentImporter.importDocuments(documents, onProgress)
+    }
+
+    /**
+     * Получение статистики базы данных.
+     */
+    suspend fun getStats(): Result<DatabaseStats> {
+        return sqliteManager.getStats()
     }
 
     /**
