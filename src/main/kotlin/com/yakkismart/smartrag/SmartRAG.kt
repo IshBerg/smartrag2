@@ -7,11 +7,19 @@
 package com.yakkismart.smartrag
 
 import android.content.Context
+import com.yakkismart.smartrag.storage.SQLiteManager
 
 class SmartRAG private constructor(
     private val context: Context,
     private val config: SmartRAGConfig
 ) {
+
+    private val sqliteManager: SQLiteManager = SQLiteManager(context, config.dbName)
+
+    init {
+        // Инициализация базы данных
+        sqliteManager.writableDatabase
+    }
 
     class Builder(private val context: Context) {
         private var config = SmartRAGConfig.default()
@@ -25,6 +33,13 @@ class SmartRAG private constructor(
         }
 
         fun build(): SmartRAG = SmartRAG(context, config)
+    }
+
+    /**
+     * Закрытие ресурсов.
+     */
+    fun close() {
+        sqliteManager.close()
     }
 
     companion object {
