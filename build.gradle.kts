@@ -14,11 +14,11 @@ plugins {
 
 android {
     namespace = "com.yakkismart.smartrag"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 33
-        targetSdk = 35
+        targetSdk = 36
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
