@@ -60,7 +60,7 @@ class GraphBuilder(
 
                         db.execSQL(
                             sql,
-                            arrayOf(
+                            arrayOf<Any?>(
                                 contentId,
                                 nodeId,
                                 entity.confidence,
@@ -127,7 +127,7 @@ class GraphBuilder(
                 (node_type, name, canonical_name, first_seen, last_seen, mention_count, importance)
                 VALUES (?, ?, ?, ?, ?, 1, 1.0)
             """.trimIndent()
-            db.execSQL(sql, arrayOf(nodeType, name, canonicalName, now, now))
+            db.execSQL(sql, arrayOf<Any?>(nodeType, name, canonicalName, now, now))
 
             // Получаем ID
             val idCursor = db.rawQuery("SELECT last_insert_rowid()", null)
@@ -183,7 +183,7 @@ class GraphBuilder(
 
                     db.execSQL(
                         "UPDATE graph_edges SET weight = ? WHERE id = ?",
-                        arrayOf(currentWeight + 0.1f, edgeId)
+                        arrayOf<Any?>(currentWeight + 0.1f, edgeId)
                     )
                 } else {
                     cursor.close()

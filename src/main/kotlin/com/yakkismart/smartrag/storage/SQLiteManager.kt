@@ -99,7 +99,7 @@ class SQLiteManager(
                 VALUES (?, ?, ?, ?, ?, ?)
             """.trimIndent()
 
-            db.execSQL(sql, arrayOf(type, source, originalText, now, now, metadata))
+            db.execSQL(sql, arrayOf<Any?>(type, source, originalText, now, now, metadata))
 
             // Получаем ID последней вставки
             val cursor = db.rawQuery("SELECT last_insert_rowid()", null)

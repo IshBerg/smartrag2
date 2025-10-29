@@ -143,7 +143,7 @@ class DocumentImporter(
 
         db.execSQL(
             sql,
-            arrayOf(contentId, title, document.text, tags)
+            arrayOf<Any?>(contentId, title, document.text, tags)
         )
     }
 }
