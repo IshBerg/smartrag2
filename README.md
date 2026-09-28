@@ -1,3 +1,5 @@
+> **SmartRAG v2** — hybrid on-device retrieval (RAG) library for Android: SQLite for data, a knowledge graph and full-text search (FTS5), a Rust vector index for semantic search, and a Kotlin API. Built October 2025. The rest of this README is in Russian.
+
 # SmartRAG v2
 
 **Version:** 2.0.0
